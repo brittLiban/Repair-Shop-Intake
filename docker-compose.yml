@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3001:3001"
+    volumes:
+      - grc-data:/app/data
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      # Override these in a .env file or via environment variables
+      JWT_SECRET: ${JWT_SECRET:-grc-change-this-secret-in-production}
+      STAFF_EMAIL: ${STAFF_EMAIL:-staff@greenriver.edu}
+      STAFF_PASSWORD: ${STAFF_PASSWORD:-grcstaff2026}
+      DB_PATH: /app/data/grc.db
+    restart: unless-stopped
+
+volumes:
+  grc-data:
