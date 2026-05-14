@@ -36,8 +36,7 @@ export default function Header() {
             Start a repair
           </Link>
 
-          {/* Staff controls — only visible when logged in as staff */}
-          {user?.role === 'staff' && (
+          {user?.role === 'staff' ? (
             <>
               <Link
                 to="/staff"
@@ -54,6 +53,14 @@ export default function Header() {
                 Sign out
               </button>
             </>
+          ) : (
+            <Link
+              to="/staff/login"
+              className="btn-signin"
+              style={{ marginLeft: 8, textDecoration: 'none' }}
+            >
+              Staff login
+            </Link>
           )}
         </nav>
       </div>
