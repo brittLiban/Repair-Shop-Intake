@@ -140,9 +140,11 @@ dt { font-weight: 500; }
 
 /* Sign-in button in header */
 .btn-signin {
-  height: 36px; padding: 0 14px; border-radius: var(--r-md);
-  border: 1px solid var(--border-strong); background: var(--surface);
-  font-size: 13px; font-weight: 500; color: var(--text); cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; height: 36px; padding: 0 14px;
+  border-radius: var(--r-md); border: 1px solid var(--border-strong);
+  background: var(--surface); font-size: 13px; font-weight: 500;
+  color: var(--text); cursor: pointer; font-family: inherit; text-decoration: none;
+  white-space: nowrap;
 }
 .btn-signin:hover { background: var(--surface-2); text-decoration: none; }
 .btn-signin.primary { background: var(--accent); color: white; border-color: var(--accent); }

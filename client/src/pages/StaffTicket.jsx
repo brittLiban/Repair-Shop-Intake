@@ -87,16 +87,22 @@ function EquipmentLedgerForm({ ticketId, onSaved }) {
               type="text"
               className="input"
               value={items[item]?.custInitial || ''}
-              onChange={(e) => setItem(item, 'custInitial', e.target.value.toUpperCase().slice(0, 4))}
-              placeholder="XX"
+              onChange={(e) => {
+                const v = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 1);
+                setItem(item, 'custInitial', v);
+              }}
+              placeholder="A"
               style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 14, height: 36, padding: '0 8px' }}
             />
             <input
               type="text"
               className="input"
               value={items[item]?.techInitial || ''}
-              onChange={(e) => setItem(item, 'techInitial', e.target.value.toUpperCase().slice(0, 4))}
-              placeholder="XX"
+              onChange={(e) => {
+                const v = e.target.value.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 1);
+                setItem(item, 'techInitial', v);
+              }}
+              placeholder="A"
               style={{ textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: 14, height: 36, padding: '0 8px' }}
             />
             <input
