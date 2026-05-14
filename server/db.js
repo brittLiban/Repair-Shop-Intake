@@ -43,6 +43,7 @@ function initDb() {
       device        TEXT,
       serial        TEXT,
       technician    TEXT,
+      parts_needed  TEXT,
       priority      TEXT NOT NULL DEFAULT 'med',
       created_at    TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at    TEXT NOT NULL DEFAULT (datetime('now'))
@@ -52,6 +53,7 @@ function initDb() {
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       ticket_id  INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
       author     TEXT NOT NULL,
+      kind       TEXT NOT NULL DEFAULT 'note',
       message    TEXT NOT NULL,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
@@ -65,11 +67,15 @@ function initDb() {
     );
   `);
 
-  // Migrate: add client contact columns if upgrading from an older schema
+  // Migrate: add columns to existing databases
   const ticketCols = database.prepare("PRAGMA table_info(tickets)").all().map((c) => c.name);
   if (!ticketCols.includes('client_name'))  database.exec("ALTER TABLE tickets ADD COLUMN client_name  TEXT");
   if (!ticketCols.includes('client_email')) database.exec("ALTER TABLE tickets ADD COLUMN client_email TEXT");
   if (!ticketCols.includes('client_phone')) database.exec("ALTER TABLE tickets ADD COLUMN client_phone TEXT");
+  if (!ticketCols.includes('parts_needed')) database.exec("ALTER TABLE tickets ADD COLUMN parts_needed TEXT");
+
+  const updateCols = database.prepare("PRAGMA table_info(ticket_updates)").all().map((c) => c.name);
+  if (!updateCols.includes('kind')) database.exec("ALTER TABLE ticket_updates ADD COLUMN kind TEXT NOT NULL DEFAULT 'note'");
 
   // Seed a default staff account on first run
   const staffExists = database

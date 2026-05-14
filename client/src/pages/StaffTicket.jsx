@@ -135,6 +135,7 @@ export default function StaffTicket() {
   const [editStatus, setEditStatus] = useState('');
   const [editTech, setEditTech] = useState('');
   const [editPriority, setEditPriority] = useState('');
+  const [editParts, setEditParts] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -144,6 +145,7 @@ export default function StaffTicket() {
         setEditStatus(data.status);
         setEditTech(data.technician || '');
         setEditPriority(data.priority || 'med');
+        setEditParts(data.parts_needed || '');
       })
       .finally(() => setLoading(false));
   };
@@ -157,6 +159,7 @@ export default function StaffTicket() {
         status: editStatus,
         technician: editTech,
         priority: editPriority,
+        parts_needed: editParts,
         note: note.trim() || undefined,
       });
       setNote('');
@@ -228,23 +231,51 @@ export default function StaffTicket() {
 
             <div className="card">
               <h3 style={{ marginBottom: 16, fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                Update timeline
+                Changelog
               </h3>
-              <div style={{ position: 'relative', paddingLeft: 22, marginBottom: 20 }}>
-                <div style={{ position: 'absolute', left: 6, top: 6, bottom: 6, width: 1, background: 'var(--border)' }} />
-                {ticket.updates?.map((u, i) => (
-                  <div key={i} style={{ position: 'relative', marginBottom: 18 }}>
-                    <span style={{ position: 'absolute', left: -22, top: 4, width: 13, height: 13, borderRadius: '50%', background: i === 0 ? 'var(--accent)' : 'var(--surface)', border: '2px solid ' + (i === 0 ? 'var(--accent)' : 'var(--border-strong)') }} />
-                    <div className="mono" style={{ fontSize: 11, color: 'var(--text-soft)', marginBottom: 4 }}>
-                      {new Date(u.created_at).toLocaleString()} · {u.author}
+              <div style={{ position: 'relative', paddingLeft: 24, marginBottom: 24 }}>
+                <div style={{ position: 'absolute', left: 7, top: 6, bottom: 6, width: 1, background: 'var(--border)' }} />
+                {ticket.changelog?.length === 0 && (
+                  <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>No activity yet.</p>
+                )}
+                {ticket.changelog?.map((u, i) => {
+                  const isChange = u.kind === 'change';
+                  const isEvent  = u.kind === 'event';
+                  const dotColor = isEvent ? 'var(--green-grc)' : isChange ? 'var(--text-soft)' : 'var(--accent)';
+                  const msgColor = isChange ? 'var(--text-muted)' : 'var(--text)';
+                  const kindLabel = isEvent ? 'EVENT' : isChange ? 'CHANGE' : 'NOTE';
+                  const kindBg   = isEvent
+                    ? 'color-mix(in oklab, var(--green-grc) 14%, transparent)'
+                    : isChange
+                    ? 'var(--surface-2)'
+                    : 'color-mix(in oklab, var(--accent) 12%, transparent)';
+                  const kindFg   = isEvent ? 'var(--green-grc)' : isChange ? 'var(--text-soft)' : 'var(--accent)';
+                  return (
+                    <div key={i} style={{ position: 'relative', marginBottom: 20 }}>
+                      <span style={{ position: 'absolute', left: -24, top: 5, width: 14, height: 14, borderRadius: '50%', background: dotColor, border: '2px solid ' + dotColor, boxShadow: '0 0 0 3px var(--surface)' }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span className="mono" style={{ fontSize: 11, color: 'var(--text-soft)' }}>
+                          {new Date(u.created_at).toLocaleString()}
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)' }}>{u.author}</span>
+                        <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', padding: '1px 6px', borderRadius: 3, background: kindBg, color: kindFg, letterSpacing: '0.05em' }}>{kindLabel}</span>
+                      </div>
+                      <div style={{ fontSize: 13, color: msgColor, lineHeight: 1.6, whiteSpace: 'pre-line' }}>{u.message}</div>
                     </div>
-                    <div style={{ fontSize: 14, color: 'var(--text)', lineHeight: 1.55 }}>{u.message}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
-              <Field label="Add update note">
-                <TextArea value={note} onChange={setNote} rows={3} placeholder="Note visible to customer and staff…" />
+              <Field label="Add note">
+                <TextArea value={note} onChange={setNote} rows={3} placeholder="Internal note — who did what, what was found…" />
               </Field>
+              <button
+                className="btn btn-ghost"
+                style={{ marginTop: 10 }}
+                disabled={saving || !note.trim()}
+                onClick={save}
+              >
+                {saving ? 'Saving…' : 'Post note'}
+              </button>
             </div>
           </div>
 
@@ -282,6 +313,14 @@ export default function StaffTicket() {
                     value={editPriority}
                     onChange={setEditPriority}
                     options={[{ value: 'high', label: 'High' }, { value: 'med', label: 'Med' }, { value: 'low', label: 'Low' }]}
+                  />
+                </Field>
+                <Field label="Parts needed / what to order">
+                  <TextArea
+                    value={editParts}
+                    onChange={setEditParts}
+                    rows={3}
+                    placeholder="e.g. 512GB NVMe SSD (M.2 2280), DDR4-3200 8GB…"
                   />
                 </Field>
               </div>
