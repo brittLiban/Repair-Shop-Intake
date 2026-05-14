@@ -26,11 +26,11 @@ router.get(
     const params = [];
 
     if (status) {
-      conditions.push('t.status = ?');
+      conditions.push('status = ?');
       params.push(status);
     }
     if (search) {
-      conditions.push('(t.ticket_number LIKE ? OR u.name LIKE ? OR t.device LIKE ?)');
+      conditions.push('(ticket_number LIKE ? OR client_name LIKE ? OR device LIKE ?)');
       const like = `%${search}%`;
       params.push(like, like, like);
     }
@@ -39,13 +39,12 @@ router.get(
 
     const tickets = db
       .prepare(
-        `SELECT t.id, t.ticket_number, t.status, t.device, t.serial,
-                t.technician, t.priority, t.created_at, t.updated_at,
-                u.name AS client_name, u.email AS client_email, u.phone AS client_phone
-         FROM tickets t
-         LEFT JOIN users u ON u.id = t.user_id
+        `SELECT id, ticket_number, status, device, serial,
+                technician, priority, created_at, updated_at,
+                client_name, client_email, client_phone
+         FROM tickets
          ${where}
-         ORDER BY t.created_at DESC`
+         ORDER BY created_at DESC`
       )
       .all(...params);
 
@@ -58,13 +57,7 @@ router.get('/tickets/:id', requireStaff, (req, res) => {
   const db = getDb();
 
   const ticket = db
-    .prepare(
-      `SELECT t.*, u.name AS client_name, u.email AS client_email,
-              u.phone AS client_phone, u.student_id
-       FROM tickets t
-       LEFT JOIN users u ON u.id = t.user_id
-       WHERE t.id = ?`
-    )
+    .prepare('SELECT * FROM tickets WHERE id = ?')
     .get(req.params.id);
 
   if (!ticket) {

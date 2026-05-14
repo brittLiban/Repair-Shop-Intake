@@ -36,6 +36,9 @@ function initDb() {
       id            INTEGER PRIMARY KEY AUTOINCREMENT,
       ticket_number TEXT UNIQUE NOT NULL,
       user_id       INTEGER REFERENCES users(id) ON DELETE SET NULL,
+      client_name   TEXT,
+      client_email  TEXT,
+      client_phone  TEXT,
       status        TEXT NOT NULL DEFAULT 'new',
       device        TEXT,
       serial        TEXT,
@@ -61,6 +64,12 @@ function initDb() {
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
   `);
+
+  // Migrate: add client contact columns if upgrading from an older schema
+  const ticketCols = database.prepare("PRAGMA table_info(tickets)").all().map((c) => c.name);
+  if (!ticketCols.includes('client_name'))  database.exec("ALTER TABLE tickets ADD COLUMN client_name  TEXT");
+  if (!ticketCols.includes('client_email')) database.exec("ALTER TABLE tickets ADD COLUMN client_email TEXT");
+  if (!ticketCols.includes('client_phone')) database.exec("ALTER TABLE tickets ADD COLUMN client_phone TEXT");
 
   // Seed a default staff account on first run
   const staffExists = database

@@ -311,24 +311,24 @@ function StepWorkOrder({ data, onChange, onBack, onSubmit, submitting }) {
 
 // ── Success ──────────────────────────────────────────────────────────────────
 
-function Success({ ticketNumber }) {
-  const navigate = useNavigate();
+function Success({ ticketNumber, onStartAnother }) {
   return (
     <div className="card success-card">
       <div className="check-circle"><Icon name="check" size={32} /></div>
       <h1>Intake submitted</h1>
-      <p style={{ color: 'var(--text-muted)', maxWidth: '48ch', margin: '0 auto' }}>
-        Your forms have been received. Please bring your device to <strong>TC-104</strong> during shop hours.
-        A technician will complete the Equipment Ledger with you at drop-off.
+      <p style={{ color: 'var(--text-muted)', maxWidth: '52ch', margin: '0 auto' }}>
+        Your forms have been received. Write down your ticket number, then bring your
+        device to <strong>TC-104</strong> during shop hours. A technician will complete
+        the Equipment Ledger with you at drop-off.
       </p>
       <div className="success-ticket">
-        <span className="label">Ticket Number</span>
+        <span className="label">Your ticket number</span>
         {ticketNumber}
       </div>
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-        <button className="btn btn-secondary" onClick={() => navigate('/intake')}>Start another</button>
-        <button className="btn btn-primary" onClick={() => navigate('/portal')}>View my tickets</button>
+      <div style={{ marginBottom: 24, padding: 14, background: 'color-mix(in oklab, var(--blue-sky) 8%, transparent)', border: '1px solid color-mix(in oklab, var(--blue-sky) 24%, transparent)', borderRadius: 8, fontSize: 13, color: 'var(--text)' }}>
+        <strong>Save this number.</strong> You'll need it at drop-off and pickup. Screenshot or write it down.
       </div>
+      <button className="btn btn-primary" onClick={onStartAnother}>Submit another intake</button>
     </div>
   );
 }
@@ -362,11 +362,21 @@ export default function IntakeWizard() {
   const advance = () => { setStep((s) => s + 1); window.scrollTo(0, 0); };
   const back = () => { setStep((s) => s - 1); window.scrollTo(0, 0); };
 
+  const reset = () => {
+    setStep(0);
+    setIssueData({});
+    setPoliciesData({ initials: {} });
+    setWorkOrderData({ issues: {} });
+    setTicketNumber('');
+    setError('');
+    window.scrollTo(0, 0);
+  };
+
   if (step === 3) {
     return (
       <div className="form-shell">
         <div className="container" style={{ maxWidth: 640 }}>
-          <Success ticketNumber={ticketNumber} />
+          <Success ticketNumber={ticketNumber} onStartAnother={reset} />
         </div>
       </div>
     );

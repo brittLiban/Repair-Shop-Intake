@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 export default function Footer() {
   return (
     <footer className="footer">
@@ -8,6 +10,9 @@ export default function Footer() {
         </div>
         <div className="links">
           <span style={{ color: 'var(--text-muted)' }}>All services free · Donations welcome</span>
+          <Link to="/staff/login" style={{ color: 'var(--text-soft)', fontSize: 12 }}>
+            Staff login
+          </Link>
         </div>
       </div>
     </footer>

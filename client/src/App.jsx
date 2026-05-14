@@ -7,7 +7,6 @@ import TweaksPanel from './components/shared/TweaksPanel';
 import Home from './pages/Home';
 import AuthPage from './pages/AuthPage';
 import IntakeWizard from './pages/IntakeWizard';
-import Portal from './pages/Portal';
 import StaffDashboard from './pages/StaffDashboard';
 import StaffTicket from './pages/StaffTicket';
 
@@ -40,15 +39,10 @@ function useTweaks() {
   return [tweaks, setTweak];
 }
 
-function RequireAuth({ children }) {
-  const { user } = useAuth();
-  return user ? children : <Navigate to="/auth" replace />;
-}
-
 function RequireStaff({ children }) {
   const { user } = useAuth();
-  if (!user) return <Navigate to="/auth" replace />;
-  if (user.role !== 'staff') return <Navigate to="/portal" replace />;
+  if (!user) return <Navigate to="/staff/login" replace />;
+  if (user.role !== 'staff') return <Navigate to="/" replace />;
   return children;
 }
 
@@ -68,24 +62,15 @@ export default function App() {
       <Header />
       <main style={{ flex: 1 }}>
         <Routes>
+          {/* Public */}
           <Route path="/" element={<Home />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route
-            path="/intake"
-            element={<RequireAuth><IntakeWizard /></RequireAuth>}
-          />
-          <Route
-            path="/portal"
-            element={<RequireAuth><Portal /></RequireAuth>}
-          />
-          <Route
-            path="/staff"
-            element={<RequireStaff><StaffDashboard /></RequireStaff>}
-          />
-          <Route
-            path="/staff/tickets/:id"
-            element={<RequireStaff><StaffTicket /></RequireStaff>}
-          />
+          <Route path="/intake" element={<IntakeWizard />} />
+          <Route path="/staff/login" element={<AuthPage />} />
+
+          {/* Staff only */}
+          <Route path="/staff" element={<RequireStaff><StaffDashboard /></RequireStaff>} />
+          <Route path="/staff/tickets/:id" element={<RequireStaff><StaffTicket /></RequireStaff>} />
+
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>

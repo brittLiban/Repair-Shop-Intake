@@ -1,7 +1,6 @@
 const router = require('express').Router();
 const { body, validationResult } = require('express-validator');
 const { getDb } = require('../db');
-const { requireAuth } = require('../middleware/auth');
 
 function generateTicketNumber() {
   const d = new Date();
@@ -12,10 +11,9 @@ function generateTicketNumber() {
   return `GRC-${yy}${mm}${dd}-${rand}`;
 }
 
-// POST /api/tickets/intake — submit all 3 client-facing forms at once
+// POST /api/tickets/intake — public, no auth required
 router.post(
   '/intake',
-  requireAuth,
   [
     body('issueData').isObject().withMessage('Issue form data required'),
     body('policiesData').isObject().withMessage('Policies form data required'),
@@ -31,11 +29,19 @@ router.post(
     const db = getDb();
 
     const ticketNumber = generateTicketNumber();
-    const device = workOrderData.device || issueData.device || '';
-    const serial = workOrderData.serial || '';
+
+    // Pull client contact info from the work order form so the staff queue
+    // can display it without needing a user account
+    const clientName  = (workOrderData.name  || '').trim();
+    const clientEmail = (workOrderData.email || '').trim();
+    const clientPhone = (workOrderData.phone || '').trim();
+    const device      = (issueData.device    || '').trim();
+    const serial      = (issueData.serial    || '').trim();
 
     const insertTicket = db.prepare(
-      'INSERT INTO tickets (ticket_number, user_id, device, serial) VALUES (?, ?, ?, ?)'
+      `INSERT INTO tickets
+         (ticket_number, client_name, client_email, client_phone, device, serial)
+       VALUES (?, ?, ?, ?, ?, ?)`
     );
     const insertForm = db.prepare(
       'INSERT INTO form_submissions (ticket_id, form_type, form_data) VALUES (?, ?, ?)'
@@ -45,9 +51,11 @@ router.post(
     );
 
     const ticketId = db.transaction(() => {
-      const { lastInsertRowid } = insertTicket.run(ticketNumber, req.user.id, device, serial);
-      insertForm.run(lastInsertRowid, 'issue', JSON.stringify(issueData));
-      insertForm.run(lastInsertRowid, 'policies', JSON.stringify(policiesData));
+      const { lastInsertRowid } = insertTicket.run(
+        ticketNumber, clientName, clientEmail, clientPhone, device, serial
+      );
+      insertForm.run(lastInsertRowid, 'issue',     JSON.stringify(issueData));
+      insertForm.run(lastInsertRowid, 'policies',  JSON.stringify(policiesData));
       insertForm.run(lastInsertRowid, 'workorder', JSON.stringify(workOrderData));
       insertUpdate.run(lastInsertRowid, 'System', 'Intake forms submitted. Waiting for equipment drop-off.');
       return lastInsertRowid;
@@ -56,52 +64,5 @@ router.post(
     res.status(201).json({ ticketNumber, ticketId });
   }
 );
-
-// GET /api/tickets — list my tickets
-router.get('/', requireAuth, (req, res) => {
-  const db = getDb();
-
-  const tickets = db
-    .prepare(
-      `SELECT id, ticket_number, status, device, serial, technician, priority, created_at, updated_at
-       FROM tickets WHERE user_id = ? ORDER BY created_at DESC`
-    )
-    .all(req.user.id);
-
-  const withUpdates = tickets.map((t) => ({
-    ...t,
-    updates: db
-      .prepare(
-        `SELECT author, message, created_at
-         FROM ticket_updates WHERE ticket_id = ?
-         ORDER BY created_at DESC LIMIT 5`
-      )
-      .all(t.id),
-  }));
-
-  res.json(withUpdates);
-});
-
-// GET /api/tickets/:id — single ticket (customer sees own only)
-router.get('/:id', requireAuth, (req, res) => {
-  const db = getDb();
-
-  const ticket = db
-    .prepare('SELECT * FROM tickets WHERE id = ? AND user_id = ?')
-    .get(req.params.id, req.user.id);
-
-  if (!ticket) {
-    return res.status(404).json({ error: 'Ticket not found' });
-  }
-
-  const updates = db
-    .prepare(
-      `SELECT author, message, created_at
-       FROM ticket_updates WHERE ticket_id = ? ORDER BY created_at DESC`
-    )
-    .all(ticket.id);
-
-  res.json({ ...ticket, updates });
-});
 
 module.exports = router;

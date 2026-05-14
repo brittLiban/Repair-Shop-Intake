@@ -11,7 +11,7 @@ const SERVICES = [
 ];
 
 const HOW_IT_WORKS = [
-  { n: '1', t: 'Fill out intake forms', d: 'Complete Issue Description, Policies, and Work Order/Release online before you arrive. A technician then completes the Equipment Ledger with you at drop-off.' },
+  { n: '1', t: 'Fill out intake forms', d: 'No account needed — complete the Issue Description, Policies, and Work Order/Release right here. You\'ll get a ticket number to bring with your device.' },
   { n: '2', t: 'Diagnose + Repair', d: 'A student technician opens a work order under faculty supervision and contacts you with findings. Repairs are first-come, first-served.' },
   { n: '3', t: 'Pickup', d: 'You\'ll be notified when your device is ready. Sign the Pick-Up Receipt and Equipment Ledger to confirm everything was returned and the work is to your satisfaction.' },
 ];
@@ -35,9 +35,6 @@ export default function Home() {
           <div className="cta-row">
             <button className="btn btn-primary btn-lg" onClick={() => navigate('/intake')}>
               Start a repair <Icon name="arrow-right" />
-            </button>
-            <button className="btn btn-secondary btn-lg" onClick={() => navigate('/portal')}>
-              Check repair status
             </button>
           </div>
           <div style={{ marginTop: 36, display: 'inline-flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: 'color-mix(in oklab, var(--green-leaf) 16%, transparent)', border: '1px solid color-mix(in oklab, var(--green-grc) 24%, transparent)', borderRadius: 8, fontSize: 13, color: 'var(--text)' }}>
