@@ -36,6 +36,14 @@ export default function Header() {
             Start a repair
           </Link>
 
+          <Link
+            to="/status"
+            className="nav-link always"
+            aria-current={location.pathname.startsWith('/status') ? 'page' : undefined}
+          >
+            Check status
+          </Link>
+
           {user?.role === 'staff' ? (
             <>
               <Link

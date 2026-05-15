@@ -75,4 +75,22 @@ router.post(
   }
 );
 
+// GET /api/auth/me — verify token and return current user
+router.get('/me', (req, res) => {
+  const header = req.headers.authorization;
+  if (!header?.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  try {
+    const JWT_SECRET = process.env.JWT_SECRET || 'grc-dev-secret-change-in-production';
+    const payload = require('jsonwebtoken').verify(header.slice(7), JWT_SECRET);
+    if (payload.role !== 'staff') {
+      return res.status(403).json({ error: 'Staff access required' });
+    }
+    res.json({ user: { id: payload.id, email: payload.email, name: payload.name, role: payload.role } });
+  } catch {
+    res.status(401).json({ error: 'Invalid or expired token' });
+  }
+});
+
 module.exports = router;

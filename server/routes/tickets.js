@@ -65,4 +65,86 @@ router.post(
   }
 );
 
+// GET /api/tickets/status/:ticketNumber — public lookup by ticket number
+router.get('/status/:ticketNumber', (req, res) => {
+  const db = getDb();
+  const ticket = db
+    .prepare(
+      `SELECT ticket_number, device, serial, status, priority, created_at, updated_at
+       FROM tickets WHERE ticket_number = ?`
+    )
+    .get(req.params.ticketNumber.toUpperCase());
+
+  if (!ticket) {
+    return res.status(404).json({ error: 'Ticket not found. Check the number and try again.' });
+  }
+
+  const updates = db
+    .prepare(
+      `SELECT author, kind, message, created_at
+       FROM ticket_updates
+       WHERE ticket_id = (SELECT id FROM tickets WHERE ticket_number = ?)
+         AND kind IN ('note', 'event')
+       ORDER BY created_at ASC`
+    )
+    .all(req.params.ticketNumber.toUpperCase());
+
+  res.json({ ...ticket, updates });
+});
+
+// POST /api/tickets/find-by-email — public lookup by email (forgot ticket number)
+router.post(
+  '/find-by-email',
+  [body('email').isEmail().normalizeEmail()],
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: 'Please enter a valid email address.' });
+    }
+
+    const db = getDb();
+    const tickets = db
+      .prepare(
+        `SELECT ticket_number, device, status, created_at
+         FROM tickets WHERE client_email = ? COLLATE NOCASE
+         ORDER BY created_at DESC`
+      )
+      .all(req.body.email);
+
+    res.json({ tickets });
+  }
+);
+
+// POST /api/tickets/find-by-name-phone — public lookup by name + phone
+router.post(
+  '/find-by-name-phone',
+  [
+    body('name').isString().trim().notEmpty(),
+    body('phone').isString().trim().notEmpty(),
+  ],
+  (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ error: 'Please enter both your name and phone number.' });
+    }
+
+    const db = getDb();
+    // Strip non-digits for a loose phone match
+    const { name, phone } = req.body;
+    const digitsOnly = phone.replace(/\D/g, '');
+
+    const tickets = db
+      .prepare(
+        `SELECT ticket_number, device, status, created_at
+         FROM tickets
+         WHERE client_name LIKE ? COLLATE NOCASE
+           AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(client_phone,'-',''),'(',''),')',''),' ',''),'.','') LIKE ?
+         ORDER BY created_at DESC`
+      )
+      .all(`%${name}%`, `%${digitsOnly}%`);
+
+    res.json({ tickets });
+  }
+);
+
 module.exports = router;

@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { authApi } from './api';
 import Header from './components/shared/Header';
 import Footer from './components/shared/Footer';
 import TweaksPanel from './components/shared/TweaksPanel';
@@ -9,6 +10,7 @@ import AuthPage from './pages/AuthPage';
 import IntakeWizard from './pages/IntakeWizard';
 import StaffDashboard from './pages/StaffDashboard';
 import StaffTicket from './pages/StaffTicket';
+import StatusPage from './pages/StatusPage';
 
 const ACCENT_HOVER = {
   '#2C882B': '#006225',
@@ -40,9 +42,28 @@ function useTweaks() {
 }
 
 function RequireStaff({ children }) {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/staff/login" replace />;
-  if (user.role !== 'staff') return <Navigate to="/" replace />;
+  const { user, logout } = useAuth();
+  const [verified, setVerified] = useState(false);
+  const [denied, setDenied] = useState(false);
+  const checked = useRef(false);
+
+  useEffect(() => {
+    if (checked.current) return;
+    checked.current = true;
+    if (!user || user.role !== 'staff') {
+      setDenied(true);
+      return;
+    }
+    authApi.me()
+      .then(() => setVerified(true))
+      .catch(() => {
+        logout();
+        setDenied(true);
+      });
+  }, []);
+
+  if (denied) return <Navigate to="/staff/login" replace />;
+  if (!verified) return null; // blank while verifying — no flash of content
   return children;
 }
 
@@ -65,6 +86,7 @@ export default function App() {
           {/* Public */}
           <Route path="/" element={<Home />} />
           <Route path="/intake" element={<IntakeWizard />} />
+          <Route path="/status" element={<StatusPage />} />
           <Route path="/staff/login" element={<AuthPage />} />
 
           {/* Staff only */}
