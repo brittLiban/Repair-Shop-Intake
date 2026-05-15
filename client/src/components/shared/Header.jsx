@@ -56,8 +56,8 @@ export default function Header() {
           ) : (
             <Link
               to="/staff/login"
-              className="btn-signin"
-              style={{ marginLeft: 8, textDecoration: 'none' }}
+              className="btn-signin primary"
+              style={{ marginLeft: 8 }}
             >
               Staff login
             </Link>
