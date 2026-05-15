@@ -5,6 +5,14 @@ const { body, validationResult } = require('express-validator');
 const { getDb } = require('../db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'grc-dev-secret-change-in-production';
+const isProd = process.env.NODE_ENV === 'production';
+
+const COOKIE_OPTS = {
+  httpOnly: true,
+  sameSite: 'strict',
+  secure: isProd,
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+};
 
 const signToken = (user) =>
   jwt.sign(
@@ -13,44 +21,9 @@ const signToken = (user) =>
     { expiresIn: '7d' }
   );
 
-const publicUser = (u) => ({
-  id: u.id,
-  email: u.email,
-  name: u.name,
-  role: u.role,
-});
+const publicUser = (u) => ({ id: u.id, email: u.email, name: u.name, role: u.role });
 
-router.post(
-  '/register',
-  [
-    body('email').isEmail().normalizeEmail().withMessage('Valid email required'),
-    body('name').trim().notEmpty().withMessage('Name required'),
-    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-  ],
-  (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { email, name, password, phone, studentId } = req.body;
-    const db = getDb();
-
-    const existing = db.prepare('SELECT id FROM users WHERE email = ?').get(email);
-    if (existing) {
-      return res.status(409).json({ error: 'An account with that email already exists.' });
-    }
-
-    const hash = bcrypt.hashSync(password, 10);
-    const { lastInsertRowid } = db
-      .prepare('INSERT INTO users (email, name, password, phone, student_id) VALUES (?, ?, ?, ?, ?)')
-      .run(email, name, hash, phone || null, studentId || null);
-
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(lastInsertRowid);
-    res.status(201).json({ token: signToken(user), user: publicUser(user) });
-  }
-);
-
+// POST /api/auth/login
 router.post(
   '/login',
   [
@@ -60,7 +33,7 @@ router.post(
   (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return res.status(400).json({ error: 'Invalid email or password.' });
     }
 
     const { email, password } = req.body;
@@ -71,25 +44,27 @@ router.post(
       return res.status(401).json({ error: 'Invalid email or password.' });
     }
 
-    res.json({ token: signToken(user), user: publicUser(user) });
+    res.cookie('grc_token', signToken(user), COOKIE_OPTS);
+    res.json({ user: publicUser(user) });
   }
 );
 
-// GET /api/auth/me — verify token and return current user
+// POST /api/auth/logout
+router.post('/logout', (_req, res) => {
+  res.clearCookie('grc_token', { httpOnly: true, sameSite: 'strict', secure: isProd });
+  res.json({ ok: true });
+});
+
+// GET /api/auth/me — verify cookie and return current user
 router.get('/me', (req, res) => {
-  const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Not authenticated' });
-  }
+  const token = req.cookies?.grc_token;
+  if (!token) return res.status(401).json({ error: 'Not authenticated' });
   try {
-    const JWT_SECRET = process.env.JWT_SECRET || 'grc-dev-secret-change-in-production';
-    const payload = require('jsonwebtoken').verify(header.slice(7), JWT_SECRET);
-    if (payload.role !== 'staff') {
-      return res.status(403).json({ error: 'Staff access required' });
-    }
-    res.json({ user: { id: payload.id, email: payload.email, name: payload.name, role: payload.role } });
+    const payload = jwt.verify(token, JWT_SECRET);
+    if (payload.role !== 'staff') return res.status(403).json({ error: 'Staff access required' });
+    res.json({ user: publicUser(payload) });
   } catch {
-    res.status(401).json({ error: 'Invalid or expired token' });
+    res.status(401).json({ error: 'Invalid or expired session.' });
   }
 });
 

@@ -29,7 +29,7 @@ export default function AuthPage() {
         setError('This login is for shop staff only.');
         return;
       }
-      login(res.token, res.user);
+      login(res.user);
       navigate('/staff', { replace: true });
     } catch (err) {
       setError(

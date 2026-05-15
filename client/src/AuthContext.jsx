@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useCallback } from 'react';
+import { authApi } from './api';
 
 const AuthContext = createContext(null);
 
@@ -11,14 +12,13 @@ export function AuthProvider({ children }) {
     }
   });
 
-  const login = useCallback((token, userData) => {
-    localStorage.setItem('grc-token', token);
+  const login = useCallback((userData) => {
     localStorage.setItem('grc-user', JSON.stringify(userData));
     setUser(userData);
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem('grc-token');
+  const logout = useCallback(async () => {
+    try { await authApi.logout(); } catch { /* ignore */ }
     localStorage.removeItem('grc-user');
     setUser(null);
   }, []);
