@@ -19,8 +19,7 @@ const ACCENT_HOVER = {
   '#418FDE': '#2A6FB7',
 };
 
-const DEFAULTS = { theme: 'light', accent: '#2C882B', density: 'comfortable' };
-
+const DEFAULTS = { theme: 'dark', accent: '#2C882B', density: 'comfortable' };
 function useTweaks() {
   const [tweaks, setTweaksState] = useState(() => {
     try {
